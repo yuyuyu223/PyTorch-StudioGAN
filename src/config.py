@@ -23,66 +23,71 @@ import utils.ada_aug as ada_aug
 
 
 class make_empty_object(object):
+    """
+        一个空类？？？
+    """
     pass
 
 
 class Configurations(object):
     def __init__(self, cfg_file):
+        # 配置文件
         self.cfg_file = cfg_file
+
         self.load_base_cfgs()
         self._overwrite_cfgs(self.cfg_file)
         self.define_modules()
 
     def load_base_cfgs(self):
         # -----------------------------------------------------------------------------
-        # Data settings
+        # 数据设定
         # -----------------------------------------------------------------------------
+        # 创建一个DATA空对象，什么也没有
         self.DATA = misc.make_empty_object()
-
-        # dataset name \in ["CIFAR10", "CIFAR100", "Tiny_ImageNet", "CUB200", "ImageNet", "MY_DATASET"]
+        # 数据集的名字,候选： ["CIFAR10", "CIFAR100", "Tiny_ImageNet", "CUB200", "ImageNet", "MY_DATASET"]
         self.DATA.name = "CIFAR10"
-        # image size for training
+        # 训练图像尺寸
         self.DATA.img_size = 32
-        # number of classes in training dataset, if there is no explicit class label, DATA.num_classes = 1
+        # 训练数据集类个数, 如果没有显式的标签，类个数设为1
         self.DATA.num_classes = 10
-        # number of image channels in dataset. //image_shape[0]
+        # 数据集图片的通道数. //即为image_shape[0]
         self.DATA.img_channels = 3
 
         # -----------------------------------------------------------------------------
-        # Model settings
+        # 模型设定
         # -----------------------------------------------------------------------------
+        # 创建一个MODEL空对象，什么也没有
         self.MODEL = misc.make_empty_object()
-
-        # type of backbone architectures of the generator and discriminator \in ["deep_conv", "resnet", "big_resnet", "deep_big_resnet", "stylegan2"]
+        # 生成器和判别器 的 神经网络模型结构的类型 候选： ["deep_conv", "resnet", "big_resnet", "deep_big_resnet", "stylegan2"]
         self.MODEL.backbone = "resnet"
         # conditioning method of the generator \in ["W/O", "cBN", "cAdaIN"]
         self.MODEL.g_cond_mtd = "W/O"
         # conditioning method of the discriminator \in ["W/O", "AC", "PD", "MH", "MD", "2C","D2DCE", "SPD"]
         self.MODEL.d_cond_mtd = "W/O"
-        # type of auxiliary classifier \in ["W/O", "TAC", "ADC"]
+        # 辅助分类器类型 候选： ["W/O", "TAC", "ADC"]
         self.MODEL.aux_cls_type = "W/O"
-        # whether to normalize feature maps from the discriminator or not
+        # 判别器是否对特征映射归一化
         self.MODEL.normalize_d_embed = False
         # dimension of feature maps from the discriminator
-        # only appliable when MODEL.d_cond_mtd \in ["2C, D2DCE"]
+        # 仅当MODEL.d_cond_mtd是["2C, D2DCE"]时可用
         self.MODEL.d_embed_dim = "N/A"
-        # whether to apply spectral normalization on the generator
+        # 生成器使用谱归一化
         self.MODEL.apply_g_sn = False
-        # whether to apply spectral normalization on the discriminator
+        # 判别器使用谱归一化
         self.MODEL.apply_d_sn = False
-        # type of activation function in the generator \in ["ReLU", "Leaky_ReLU", "ELU", "GELU"]
+        # 生成器激活函数类别 候选： ["ReLU", "Leaky_ReLU", "ELU", "GELU"]
         self.MODEL.g_act_fn = "ReLU"
-        # type of activation function in the discriminator \in ["ReLU", "Leaky_ReLU", "ELU", "GELU"]
+        # 判别器激活函数类别 候选： ["ReLU", "Leaky_ReLU", "ELU", "GELU"]
         self.MODEL.d_act_fn = "ReLU"
-        # whether to apply self-attention proposed by zhang et al. (SAGAN)
+        # 是否使用自注意力机制 by zhang et al. (SAGAN)
         self.MODEL.apply_attn = False
-        # locations of the self-attention layer in the generator (should be list type)
+        # 生成器中自注意力层所在位置 (should be list type)
         self.MODEL.attn_g_loc = ["N/A"]
-        # locations of the self-attention layer in the discriminator (should be list type)
+        # 判别器中自注意力层所在位置 (should be list type)
         self.MODEL.attn_d_loc = ["N/A"]
-        # prior distribution for noise sampling \in ["gaussian", "uniform"]
+        # 随机噪声的先验分布 候选：["gaussian", "uniform"]
         self.MODEL.z_prior = "gaussian"
-        # dimension of noise vectors
+        # 随机噪声维数（尺寸）
         self.MODEL.z_dim = 128
         # dimension of intermediate latent (W) dimensionality used only for StyleGAN
         self.MODEL.w_dim = "N/A"

@@ -36,6 +36,9 @@ import utils.ckpt as ckpt
 
 
 class make_empty_object(object):
+    """
+        又是一个空类？？？
+    """
     pass
 
 
