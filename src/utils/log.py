@@ -1,7 +1,7 @@
 '''
 Date: 2021-11-30 17:14:41
 LastEditors: HowsenFisher
-LastEditTime: 2021-12-01 10:39:30
+LastEditTime: 2021-12-01 14:07:24
 FilePath: \PyTorch-StudioGAN\src\utils\log.py
 '''
 # PyTorch StudioGAN: https://github.com/POSTECH-CVLab/PyTorch-StudioGAN
@@ -28,6 +28,9 @@ def make_run_name(format, data_name, framework, phase):
 
 
 def make_logger(save_dir, run_name, log_output):
+    """
+        建立logger对象
+    """
     if log_output is not None:
         run_name = log_output.split('/')[-1].split('.')[0]
     logger = logging.getLogger(run_name)

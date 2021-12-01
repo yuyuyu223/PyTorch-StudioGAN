@@ -37,6 +37,7 @@ import metrics.preparation as pp
 def load_worker(local_rank, cfgs, gpus_per_node, run_name, hdf5_path):
     # -----------------------------------------------------------------------------
     # define default variables for loading ckpt or evaluating the trained GAN model.
+    # 定义加载ckpt或者评估模型的一些变量
     # -----------------------------------------------------------------------------
     ada_p, step, epoch, topk, best_step, best_fid, best_ckpt_path, is_best = \
         cfgs.AUG.ada_initial_augment_p, 0, 0, cfgs.OPTIMIZATION.batch_size, 0, None, None, False
@@ -49,43 +50,52 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name, hdf5_path):
     # determine cuda, cudnn, and backends settings.
     # -----------------------------------------------------------------------------
     if cfgs.RUN.seed == -1:
+        # 开启benckmark可以增加效率，开启deterministic可以避免波动
         cudnn.benchmark, cudnn.deterministic = True, False
     else:
         cudnn.benchmark, cudnn.deterministic = False, True
-
+    # 如果使用stylegan2
     if cfgs.MODEL.backbone == "stylegan2":
-        # Improves training speed
+        # 提升训练速度
         conv2d_gradfix.enabled = True
-        # Avoids errors with the augmentation pipe
+        # 增强管线来减小误差?
         grid_sample_gradfix.enabled = True
         if cfgs.RUN.mixed_precision:
-            # Allow PyTorch to internally use tf32 for matmul
+            # 允许pytorch使用tf32来进行矩阵乘法
             torch.backends.cuda.matmul.allow_tf32 = False
-            # Allow PyTorch to internally use tf32 for convolutions
+            # 允许pytorch使用tf32来进行卷积
             torch.backends.cudnn.alllow_tf32 = False
 
     # -----------------------------------------------------------------------------
     # initialize all processes and fix seed of each process
     # -----------------------------------------------------------------------------
     if cfgs.RUN.distributed_data_parallel:
+        # 计算本进程在所有进程中的进程号
         global_rank = cfgs.RUN.current_node * (gpus_per_node) + local_rank
         print("Use GPU: {global_rank} for training.".format(global_rank=global_rank))
+        # 设置分布式后端和进程组，目前windows支持不太好
         misc.setup(global_rank, cfgs.OPTIMIZATION.world_size, cfgs.RUN.backend)
         torch.cuda.set_device(local_rank)
     else:
         global_rank = local_rank
-
+    # 设置random和pytorch，cuda，numpy的随机数种子
     misc.fix_seed(cfgs.RUN.seed + global_rank)
 
     # -----------------------------------------------------------------------------
     # Intialize python logger.
+    # 建立logger
     # -----------------------------------------------------------------------------
+    # 如果是主进程
     if local_rank == 0:
+        # 建立logger
         logger = log.make_logger(cfgs.RUN.save_dir, run_name, None)
+        # 如果有ckpt路径且freezeD
         if cfgs.RUN.ckpt_dir is not None and cfgs.RUN.freezeD == -1:
+            # 修正路径分割最后的/
             folder_hier = cfgs.RUN.ckpt_dir.split("/")
             if folder_hier[-1] == "":
                 folder_hier.pop()
+            # 打印一些信息
             logger.info("Run name : {run_name}".format(run_name=folder_hier.pop()))
         else:
             logger.info("Run name : {run_name}".format(run_name=run_name))
@@ -97,6 +107,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name, hdf5_path):
 
     # -----------------------------------------------------------------------------
     # load train and evaluation datasets.
+    # 加载训练和评估的数据集
     # -----------------------------------------------------------------------------
     if cfgs.RUN.train or cfgs.RUN.intra_class_fid or cfgs.RUN.GAN_train or cfgs.RUN.GAN_test:
         if local_rank == 0:
@@ -134,7 +145,9 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name, hdf5_path):
     # define a distributed sampler for DDP training.
     # define dataloaders for train and evaluation.
     # -----------------------------------------------------------------------------
+    # 如果是训练模式且开启DDP
     if cfgs.RUN.train and cfgs.RUN.distributed_data_parallel:
+        # 建立DistributedSampler
         train_sampler = DistributedSampler(train_dataset, num_replicas=cfgs.OPTIMIZATION.world_size, rank=local_rank)
         cfgs.OPTIMIZATION.batch_size = cfgs.OPTIMIZATION.batch_size // cfgs.OPTIMIZATION.world_size
         topk = cfgs.OPTIMIZATION.batch_size
@@ -222,6 +235,7 @@ def load_worker(local_rank, cfgs, gpus_per_node, run_name, hdf5_path):
 
     # -----------------------------------------------------------------------------
     # prepare parallel training
+    # 就是model外套DDP
     # -----------------------------------------------------------------------------
     if cfgs.OPTIMIZATION.world_size > 1:
         Gen, Gen_mapping, Gen_synthesis, Dis, Gen_ema, Gen_ema_mapping, Gen_ema_synthesis =\

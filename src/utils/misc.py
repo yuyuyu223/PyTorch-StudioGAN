@@ -184,6 +184,9 @@ def download_data_if_possible(data_name, data_dir):
 
 
 def fix_seed(seed):
+    """
+        设置random和pytorch，cuda，numpy的随机数种子
+    """
     random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
@@ -192,6 +195,10 @@ def fix_seed(seed):
 
 
 def setup(rank, world_size, backend="nccl"):
+    """
+        设置分布式后端和进程组
+    """
+    # 如果在windows上
     if sys.platform == "win32":
         # Distributed package only covers collective communications with Gloo
         # backend and FileStore on Windows platform. Set init_method parameter
