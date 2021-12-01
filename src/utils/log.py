@@ -1,3 +1,9 @@
+'''
+Date: 2021-11-30 17:14:41
+LastEditors: HowsenFisher
+LastEditTime: 2021-12-01 10:39:30
+FilePath: \PyTorch-StudioGAN\src\utils\log.py
+'''
 # PyTorch StudioGAN: https://github.com/POSTECH-CVLab/PyTorch-StudioGAN
 # The MIT License (MIT)
 # See license file or visit https://github.com/POSTECH-CVLab/PyTorch-StudioGAN for details
@@ -12,6 +18,9 @@ import logging
 
 
 def make_run_name(format, data_name, framework, phase):
+    """
+        制作本次任务名
+    """
     return format.format(data_name=data_name,
                          framework=framework,
                          phase=phase,

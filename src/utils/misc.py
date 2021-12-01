@@ -164,6 +164,9 @@ def accuracy(output, target, topk=(1,)):
 
 
 def prepare_folder(names, save_dir):
+    """
+        根据names和save_dir创建所有文件夹
+    """
     for name in names:
         folder_path = join(save_dir, name)
         if not exists(folder_path):
@@ -171,6 +174,9 @@ def prepare_folder(names, save_dir):
 
 
 def download_data_if_possible(data_name, data_dir):
+    """
+        如果数据集不存在就去下载
+    """
     if data_name == "CIFAR10":
         data = CIFAR10(root=data_dir, train=True, download=True)
     elif data_name == "CIFAR100":
@@ -204,6 +210,9 @@ def setup(rank, world_size, backend="nccl"):
 
 
 def cleanup():
+    """
+        清理进程组
+    """
     dist.destroy_process_group()
 
 

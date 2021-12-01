@@ -26,6 +26,10 @@ RUN_NAME_FORMAT = ("{data_name}-" "{framework}-" "{phase}-" "{timestamp}")
 
 
 def load_configs_initialize_training():
+    """
+        加载配置和训练初始化
+    """
+    # 所有的命令行参数
     parser = ArgumentParser(add_help=True)
     parser.add_argument("--entity", type=str, default=None, help="entity for wandb logging")
     parser.add_argument("--project", type=str, default=None, help="project name for wandb logging")
@@ -98,6 +102,7 @@ def load_configs_initialize_training():
     args = parser.parse_args()
     run_cfgs = vars(args)
 
+    # 如果有一个参数没写，就退出程序
     if not args.train and \
             not args.eval and \
             not args.save_fake_images and \
@@ -112,22 +117,27 @@ def load_configs_initialize_training():
             not args.semantic_factorization:
         parser.print_help(sys.stderr)
         sys.exit(1)
-
+    # 获取gpu数量以及当前机器进程号
     gpus_per_node, rank = torch.cuda.device_count(), torch.cuda.current_device()
-
+    # 读取配置文件
     cfgs = config.Configurations(args.cfg_file)
+    # 把命令行参数写到配置文件中的RUN字段
     cfgs.update_cfgs(run_cfgs, super="RUN")
+    # 计算所有可用的gpu数，写入cfgs.OPTIMIZATION
     cfgs.OPTIMIZATION.world_size = gpus_per_node * cfgs.RUN.total_nodes
+    # 检查参数冲突
     cfgs.check_compatability()
-
+    # 本次任务名称
     run_name = log.make_run_name(RUN_NAME_FORMAT,
                                  data_name= cfgs.DATA.name,
                                  framework=cfgs.RUN.cfg_file.split("/")[-1][:-5],
                                  phase="train")
-
+    # 如果DATA in ["CIFAR10", "CIFAR100", "Tiny_ImageNet"]，不开启长边裁剪以及resize
     crop_long_edge = False if cfgs.DATA in cfgs.MISC.no_proc_data else True
     resize_size = None if cfgs.DATA in cfgs.MISC.no_proc_data else cfgs.DATA.img_size
+    # 如果要加载hdf5
     if cfgs.RUN.load_train_hdf5:
+        # 制作hdf5数据集。返回hdf5路径，False和None
         hdf5_path, crop_long_edge, resize_size = hdf5.make_hdf5(name=cfgs.DATA.name,
                                                                 img_size=cfgs.DATA.img_size,
                                                                 crop_long_edge=crop_long_edge,
@@ -136,24 +146,29 @@ def load_configs_initialize_training():
                                                                 DATA=cfgs.DATA,
                                                                 RUN=cfgs.RUN)
     else:
+        # 否则hdf5路径为空
         hdf5_path = None
+    # 把长边裁剪和resize信息保存到配置文件
     cfgs.PRE.crop_long_edge, cfgs.PRE.resize_size = crop_long_edge, resize_size
-
+    # 新建所有需要的但不存在的文件夹
     misc.prepare_folder(names=cfgs.MISC.base_folders, save_dir=cfgs.RUN.save_dir)
+    # 如果数据集不存在就去下载
     misc.download_data_if_possible(data_name=cfgs.DATA.name, data_dir=cfgs.RUN.data_dir)
-
+    # 生成随机数种子？
     if cfgs.RUN.seed == -1:
         cfgs.RUN.seed = random.randint(1, 4096)
-
+    # 如果只有一个GPU
     if cfgs.OPTIMIZATION.world_size == 1:
         print("You have chosen a specific GPU. This will completely disable data parallelism.")
     return cfgs, gpus_per_node, run_name, hdf5_path, rank
 
 
 if __name__ == "__main__":
+    # 初始化训练，获取配置，每台机器的GPU数量。hdf5路径，本机的进程号
     cfgs, gpus_per_node, run_name, hdf5_path, rank = load_configs_initialize_training()
-
+    # 如果开启DDP并且GPU数量大于1
     if cfgs.RUN.distributed_data_parallel and cfgs.OPTIMIZATION.world_size > 1:
+        # 用Spawn的方式启动DDP
         mp.set_start_method("spawn", force=True)
         print("Train the models through DistributedDataParallel (DDP) mode.")
         try:
@@ -164,7 +179,9 @@ if __name__ == "__main__":
                                               hdf5_path),
                                         nprocs=gpus_per_node)
         except KeyboardInterrupt:
+            # 清理进程组
             misc.cleanup()
+    # 不开启DDP直接用loader
     else:
         loader.load_worker(local_rank=rank,
                            cfgs=cfgs,

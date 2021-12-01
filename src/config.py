@@ -367,6 +367,9 @@ class Configurations(object):
         }
 
     def update_cfgs(self, cfgs, super="RUN"):
+        """
+            把cfgs中的键值对，写入上游的配置文件中
+        """
         for attr, value in cfgs.items():
             setattr(self.super_cfgs[super], attr, value)
 
@@ -579,9 +582,13 @@ class Configurations(object):
                 raise NotImplementedError
 
     def check_compatability(self):
+        """
+            检查参数冲突
+        """
+        # load_data_in_memory的前提是load_train_hdf5
         if self.RUN.load_data_in_memory:
             assert self.RUN.load_train_hdf5, "load_data_in_memory option is appliable with the load_train_hdf5 (-hdf5) option."
-
+        # 如果使用deep_conv，img_size必须是32
         if self.MODEL.backbone == "deep_conv":
             assert self.DATA.img_size == 32, "StudioGAN does not support the deep_conv backbone for the dataset whose spatial resolution is not 32."
 
